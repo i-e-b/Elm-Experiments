@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>
+            arrows
+        </title>
+        <script type="text/javascript" src="/elm-runtime.js">
+            
+        </script>
+        <script type="text/javascript">
+            
+Elm.Main = function(elm){
+  var N = Elm.Native, _N = N.Utils(elm), _L = N.List(elm), _E = N.Error(elm), _J = N.JavaScript(elm), _str = _J.toString, $moduleName = 'Main';
+  var Text = Elm.Text(elm);
+  var Text = Elm.Text(elm);
+  var Basics = Elm.Basics(elm);
+  var Signal = Elm.Signal(elm);
+  var List = Elm.List(elm);
+  var Maybe = Elm.Maybe(elm);
+  var Time = Elm.Time(elm);
+  var Prelude = Elm.Prelude(elm);
+  var Graphics = Graphics || {};
+  Graphics.Element = Elm.Graphics.Element(elm);
+  var Color = Elm.Color(elm);
+  var Graphics = Graphics || {};
+  Graphics.Collage = Elm.Graphics.Collage(elm);
+  var Keyboard = Elm.Keyboard(elm);
+  var Automaton = Elm.Automaton(elm);
+  var _op = {};
+  var sumArrows = F2(function(a, b){
+    return {
+      _:{
+      },
+      x:(a.x+b.x),
+      y:(a.y+b.y)};});
+  var periodicArrows = A2(Signal.sampleOn, Time.fps(20), Keyboard.arrows);
+  var movePoint = A3(Signal.foldp, sumArrows, {
+    _:{
+    },
+    x:0,
+    y:0}, periodicArrows);
+  var main = A2(Signal.lift, Text.asText, movePoint);
+  return elm.Main = {
+    _op : _op, 
+    sumArrows : sumArrows, 
+    periodicArrows : periodicArrows, 
+    movePoint : movePoint, 
+    main : main};};
+        </script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            Elm.fullscreen(Elm.Main)
+        </script>
+        <noscript>
+            
+        </noscript>
+    </body>
+</html>

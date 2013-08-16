@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>
+            spaceShip
+        </title>
+        <script type="text/javascript" src="/elm-runtime.js">
+            
+        </script>
+        <script type="text/javascript">
+            
+Elm.Main = function(elm){
+  var N = Elm.Native, _N = N.Utils(elm), _L = N.List(elm), _E = N.Error(elm), _J = N.JavaScript(elm), _str = _J.toString, $moduleName = 'Main';
+  var Text = Elm.Text(elm);
+  var Text = Elm.Text(elm);
+  var Basics = Elm.Basics(elm);
+  var Signal = Elm.Signal(elm);
+  var List = Elm.List(elm);
+  var Maybe = Elm.Maybe(elm);
+  var Time = Elm.Time(elm);
+  var Prelude = Elm.Prelude(elm);
+  var Graphics = Graphics || {};
+  Graphics.Element = Elm.Graphics.Element(elm);
+  var Color = Elm.Color(elm);
+  var Graphics = Graphics || {};
+  Graphics.Collage = Elm.Graphics.Collage(elm);
+  var Keyboard = Elm.Keyboard(elm);
+  var Automaton = Elm.Automaton(elm);
+  var _op = {};
+  var toVec = function(r){
+    return {
+      _:{
+      },
+      x:Basics.toFloat(r.x),
+      y:Basics.toFloat(r.y)};};
+  var mag = function(v){
+    return Basics.sqrt(((v.x*v.x)+(v.y*v.y)));};
+  var normalise = function(v){
+    return function(){
+      var m = mag(v);
+      return (_N.eq(m,0.0) ? v : (Basics.otherwise ? {
+        _:{
+        },
+        x:(v.x/m),
+        y:(v.y/m)} : _E.If($moduleName,'on line 14, column 9 to 61')));}();};
+  var normalArrows = A2(Signal._op['<~'], function($){
+    return normalise(toVec($));}, Keyboard.arrows);
+  var limit = F2(function(n, v){
+    return function(){
+      var m = (mag(v)/n);
+      return ((_N.cmp(m,1.0)<1) ? v : (Basics.otherwise ? {
+        _:{
+        },
+        x:(v.x/m),
+        y:(v.y/m)} : _E.If($moduleName,'on line 19, column 9 to 53')));}();});
+  var shipVelocity = F2(function(accel, currVel){
+    return A2(limit, 20, {
+      _:{
+      },
+      x:(currVel.x+accel.x),
+      y:(currVel.y+accel.y)});});
+  var ship = A2(Automaton.state, {
+    _:{
+    },
+    x:0.0,
+    y:0.0}, shipVelocity);
+  var main = A2(Signal._op['<~'], Text.asText, A3(Automaton.run, ship, {
+    _:{
+    },
+    x:0.0,
+    y:0.0}, normalArrows));
+  var Vec = F2(function(a, b){
+    return {
+      _:{
+      },
+      x:a,
+      y:b};});
+  return elm.Main = {
+    _op : _op, 
+    mag : mag, 
+    normalise : normalise, 
+    limit : limit, 
+    toVec : toVec, 
+    shipVelocity : shipVelocity, 
+    ship : ship, 
+    normalArrows : normalArrows, 
+    main : main};};
+        </script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            Elm.fullscreen(Elm.Main)
+        </script>
+        <noscript>
+            
+        </noscript>
+    </body>
+</html>
