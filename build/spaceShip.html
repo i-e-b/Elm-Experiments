@@ -28,17 +28,24 @@ Elm.Main = function(elm){
   Graphics.Collage = Elm.Graphics.Collage(elm);
   var Keyboard = Elm.Keyboard(elm);
   var Automaton = Elm.Automaton(elm);
+  var Window = Elm.Window(elm);
   var _op = {};
   var wrap = F3(function(lo, hi, v){
-    return (((_N.cmp(v,lo)>-1)&&(_N.cmp(v,hi)<1)) ? v : (Basics.otherwise ? ((_N.cmp(v,lo)<0) ? (hi-(lo-v)) : (Basics.otherwise ? (lo+(v-hi)) : _E.If($moduleName,'on line 31, column 54 to 107'))) : _E.If($moduleName,'on line 31, column 16 to 107')));});
+    return (((_N.cmp(v,lo)>-1)&&(_N.cmp(v,hi)<1)) ? v : (Basics.otherwise ? ((_N.cmp(v,lo)<0) ? (hi-(lo-v)) : (Basics.otherwise ? (lo+(v-hi)) : _E.If($moduleName,'on line 32, column 54 to 107'))) : _E.If($moduleName,'on line 32, column 16 to 107')));});
   var toVec = function(r){
     return {
       _:{
       },
       x:Basics.toFloat(r.x),
       y:Basics.toFloat(r.y)};};
+  var scene = F2(function(arg2, ship){
+    return function(){
+      switch (arg2.ctor) {
+        case '_Tuple2':
+          return A3(Graphics.Collage.collage, arg2._0, arg2._1, _J.toList([Graphics.Collage.rotate(((2*Basics.pi)*ship.angle))(Graphics.Collage.move({ctor:"_Tuple2", _0:ship.pos.x, _1:ship.pos.y})(Graphics.Collage.filled(A3(Color.rgb, 0, 85, 170))(A2(Graphics.Collage.ngon, 3, 20))))]));
+      }_E.Case($moduleName,'between lines 60 and 65')}();});
   var pin = F3(function(lo, hi, v){
-    return ((_N.cmp(v,lo)<0) ? lo : (Basics.otherwise ? ((_N.cmp(v,hi)>0) ? hi : (Basics.otherwise ? v : _E.If($moduleName,'on line 35, column 42 to 68'))) : _E.If($moduleName,'on line 35, column 15 to 68')));});
+    return ((_N.cmp(v,lo)<0) ? lo : (Basics.otherwise ? ((_N.cmp(v,hi)>0) ? hi : (Basics.otherwise ? v : _E.If($moduleName,'on line 36, column 42 to 68'))) : _E.If($moduleName,'on line 36, column 15 to 68')));});
   var mag = function(v){
     return Basics.sqrt(((v.x*v.x)+(v.y*v.y)));};
   var normalise = function(v){
@@ -48,7 +55,7 @@ Elm.Main = function(elm){
         _:{
         },
         x:(v.x/m),
-        y:(v.y/m)} : _E.If($moduleName,'on line 18, column 9 to 61')));}();};
+        y:(v.y/m)} : _E.If($moduleName,'on line 19, column 9 to 61')));}();};
   var periodArrowKeyVec = A2(Signal._op['<~'], function($){
     return normalise(toVec($));}, A2(Signal.sampleOn, Time.fps(20), Keyboard.arrows));
   var limit = F2(function(n, v){
@@ -58,7 +65,7 @@ Elm.Main = function(elm){
         _:{
         },
         x:(v.x/m),
-        y:(v.y/m)} : _E.If($moduleName,'on line 24, column 9 to 53')));}();});
+        y:(v.y/m)} : _E.If($moduleName,'on line 25, column 9 to 53')));}();});
   var shipFrame = function(s){
     return function(){
       var newVel = A2(limit, 2, {
@@ -90,7 +97,7 @@ Elm.Main = function(elm){
     x:0,
     y:0}};
   var ship = A2(Automaton.state, defaultShip, shipInput);
-  var main = A2(Signal._op['<~'], Text.asText, A3(Automaton.run, ship, defaultShip, periodArrowKeyVec));
+  var main = A3(Signal.lift2, scene, Window.dimensions, A3(Automaton.run, ship, defaultShip, periodArrowKeyVec));
   var Vec = F2(function(a, b){
     return {
       _:{
@@ -118,7 +125,8 @@ Elm.Main = function(elm){
     shipInput : shipInput, 
     ship : ship, 
     periodArrowKeyVec : periodArrowKeyVec, 
-    main : main};};
+    main : main, 
+    scene : scene};};
         </script>
     </head>
     <body>

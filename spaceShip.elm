@@ -2,6 +2,7 @@
 
 import Keyboard
 import Automaton as A
+import Window
 
 type Vec = {x:Float, y:Float}
 type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float}
@@ -53,6 +54,12 @@ ship = A.state defaultShip shipInput
 periodArrowKeyVec : Signal Vec
 periodArrowKeyVec = (normalise . toVec) <~ (sampleOn (fps 20) Keyboard.arrows)
 
-main = (asText) <~ (A.run ship defaultShip periodArrowKeyVec)
+main = lift2 scene Window.dimensions (A.run ship defaultShip periodArrowKeyVec)
 
-
+--scene : (Int,Int) -> Ship -> Signal
+scene (w,h) ship = collage w h
+       [ ngon 3 20
+          |> filled (rgb 0 85 170)
+          |> move (ship.pos.x, ship.pos.y)
+          |> rotate (2 * pi * ship.angle)
+       ]
