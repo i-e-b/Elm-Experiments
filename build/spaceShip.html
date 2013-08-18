@@ -35,6 +35,12 @@ Elm.Main = function(elm){
       },
       x:Basics.toFloat(r.x),
       y:Basics.toFloat(r.y)};};
+  var shipFrame = function(s){
+    return s;};
+  var pin = F3(function(lo, hi, v){
+    return (((_N.cmp(v,lo)>-1)&&(_N.cmp(v,hi)<1)) ? v : (Basics.otherwise ? ((_N.cmp(v,lo)<0) ? (hi-(lo-v)) : (Basics.otherwise ? (lo+(v-hi)) : _E.If($moduleName,'on line 30, column 53 to 106'))) : _E.If($moduleName,'on line 30, column 15 to 106')));});
+  var shipInput = F2(function(accel, s){
+    return _N.replace([['angle',A3(pin, 0, 1, (s.angle+(accel.x/100)))],['thrust',accel.y]], s);});
   var mag = function(v){
     return Basics.sqrt(((v.x*v.x)+(v.y*v.y)));};
   var normalise = function(v){
@@ -44,9 +50,9 @@ Elm.Main = function(elm){
         _:{
         },
         x:(v.x/m),
-        y:(v.y/m)} : _E.If($moduleName,'on line 14, column 9 to 61')));}();};
-  var normalArrows = A2(Signal._op['<~'], function($){
-    return normalise(toVec($));}, Keyboard.arrows);
+        y:(v.y/m)} : _E.If($moduleName,'on line 18, column 9 to 61')));}();};
+  var periodArrowKeyVec = A2(Signal._op['<~'], function($){
+    return normalise(toVec($));}, A2(Signal.sampleOn, Time.fps(20), Keyboard.arrows));
   var limit = F2(function(n, v){
     return function(){
       var m = (mag(v)/n);
@@ -54,38 +60,50 @@ Elm.Main = function(elm){
         _:{
         },
         x:(v.x/m),
-        y:(v.y/m)} : _E.If($moduleName,'on line 19, column 9 to 53')));}();});
-  var shipVelocity = F2(function(accel, currVel){
-    return A2(limit, 20, {
-      _:{
-      },
-      x:(currVel.x+accel.x),
-      y:(currVel.y+accel.y)});});
-  var ship = A2(Automaton.state, {
+        y:(v.y/m)} : _E.If($moduleName,'on line 24, column 9 to 53')));}();});
+  var defaultShip = {
     _:{
     },
-    x:0.0,
-    y:0.0}, shipVelocity);
-  var main = A2(Signal._op['<~'], Text.asText, A3(Automaton.run, ship, {
+    angle:0,
+    pos:{
     _:{
     },
-    x:0.0,
-    y:0.0}, normalArrows));
+    x:0,
+    y:0},
+    thrust:0,
+    vel:{
+    _:{
+    },
+    x:0,
+    y:0}};
+  var ship = A2(Automaton.state, defaultShip, shipInput);
+  var main = A2(Signal._op['<~'], Text.asText, A3(Automaton.run, ship, defaultShip, periodArrowKeyVec));
   var Vec = F2(function(a, b){
     return {
       _:{
       },
       x:a,
       y:b};});
+  var Ship = F4(function(a, b, c, d){
+    return {
+      _:{
+      },
+      angle:c,
+      pos:a,
+      thrust:d,
+      vel:b};});
   return elm.Main = {
     _op : _op, 
+    defaultShip : defaultShip, 
     mag : mag, 
     normalise : normalise, 
     limit : limit, 
     toVec : toVec, 
-    shipVelocity : shipVelocity, 
+    pin : pin, 
+    shipFrame : shipFrame, 
+    shipInput : shipInput, 
     ship : ship, 
-    normalArrows : normalArrows, 
+    periodArrowKeyVec : periodArrowKeyVec, 
     main : main};};
         </script>
     </head>
