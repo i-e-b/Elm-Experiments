@@ -26,16 +26,24 @@ limit n v =
 toVec : {x:Int, y:Int} -> Vec
 toVec r = {x=toFloat r.x, y=toFloat r.y}
 
+-- fit a value into a range by wrapping
 wrap : Float -> Float -> Float -> Float
 wrap lo hi v = if (v >= lo && v <= hi) then (v) else if (v < lo) then (hi - (lo - v)) else (lo + (v - hi))
 
+-- fit a value into a range by saturation
+pin : Float -> Float -> Float -> Float
+pin lo hi v = if (v < lo) then (lo) else if (v > hi) then hi else v
+
 -- update ship based for next frame
 shipFrame : Ship -> Ship
-shipFrame s = s
+shipFrame s =
+    let newVel = limit 2 {x=s.vel.x + (s.thrust * sin(2*pi*s.angle)), y=s.vel.y + (s.thrust * (0 - (cos (2*pi*s.angle))))}
+        newPos = {x=s.pos.x + newVel.x, y=s.pos.y + newVel.y}
+    in  {s | pos <- newPos, vel <- newVel}
 
 -- Apply input to the ship
 shipInput : Vec -> Ship -> Ship
-shipInput accel s = {s | angle <- wrap 0 1 (s.angle + (accel.x/100)),  thrust <- accel.y} 
+shipInput accel s = shipFrame {s | angle <- wrap 0 1 (s.angle + (accel.x/100)),  thrust <- pin -0.5 1.0 accel.y} 
 
 -- state machine taking frame inputs, giving current ship status
 -- The state automaton seems to duplicate the initial state with the run function

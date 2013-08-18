@@ -29,18 +29,16 @@ Elm.Main = function(elm){
   var Keyboard = Elm.Keyboard(elm);
   var Automaton = Elm.Automaton(elm);
   var _op = {};
+  var wrap = F3(function(lo, hi, v){
+    return (((_N.cmp(v,lo)>-1)&&(_N.cmp(v,hi)<1)) ? v : (Basics.otherwise ? ((_N.cmp(v,lo)<0) ? (hi-(lo-v)) : (Basics.otherwise ? (lo+(v-hi)) : _E.If($moduleName,'on line 31, column 54 to 107'))) : _E.If($moduleName,'on line 31, column 16 to 107')));});
   var toVec = function(r){
     return {
       _:{
       },
       x:Basics.toFloat(r.x),
       y:Basics.toFloat(r.y)};};
-  var shipFrame = function(s){
-    return s;};
   var pin = F3(function(lo, hi, v){
-    return (((_N.cmp(v,lo)>-1)&&(_N.cmp(v,hi)<1)) ? v : (Basics.otherwise ? ((_N.cmp(v,lo)<0) ? (hi-(lo-v)) : (Basics.otherwise ? (lo+(v-hi)) : _E.If($moduleName,'on line 30, column 53 to 106'))) : _E.If($moduleName,'on line 30, column 15 to 106')));});
-  var shipInput = F2(function(accel, s){
-    return _N.replace([['angle',A3(pin, 0, 1, (s.angle+(accel.x/100)))],['thrust',accel.y]], s);});
+    return ((_N.cmp(v,lo)<0) ? lo : (Basics.otherwise ? ((_N.cmp(v,hi)>0) ? hi : (Basics.otherwise ? v : _E.If($moduleName,'on line 35, column 42 to 68'))) : _E.If($moduleName,'on line 35, column 15 to 68')));});
   var mag = function(v){
     return Basics.sqrt(((v.x*v.x)+(v.y*v.y)));};
   var normalise = function(v){
@@ -61,6 +59,21 @@ Elm.Main = function(elm){
         },
         x:(v.x/m),
         y:(v.y/m)} : _E.If($moduleName,'on line 24, column 9 to 53')));}();});
+  var shipFrame = function(s){
+    return function(){
+      var newVel = A2(limit, 2, {
+        _:{
+        },
+        x:(s.vel.x+(s.thrust*Basics.sin(((2*Basics.pi)*s.angle)))),
+        y:(s.vel.y+(s.thrust*(0-Basics.cos(((2*Basics.pi)*s.angle)))))});
+      var newPos = {
+        _:{
+        },
+        x:(s.pos.x+newVel.x),
+        y:(s.pos.y+newVel.y)};
+      return _N.replace([['pos',newPos],['vel',newVel]], s);}();};
+  var shipInput = F2(function(accel, s){
+    return shipFrame(_N.replace([['angle',A3(wrap, 0, 1, (s.angle+(accel.x/100)))],['thrust',A3(pin, (0-0.5), 1.0, accel.y)]], s));});
   var defaultShip = {
     _:{
     },
@@ -99,6 +112,7 @@ Elm.Main = function(elm){
     normalise : normalise, 
     limit : limit, 
     toVec : toVec, 
+    wrap : wrap, 
     pin : pin, 
     shipFrame : shipFrame, 
     shipInput : shipInput, 
