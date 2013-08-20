@@ -40,14 +40,10 @@ toVec r = {x=toFloat r.x, y=toFloat r.y}
 wrap : Float -> Float -> Float -> Float
 wrap lo hi v = if (v >= lo && v <= hi) then (v) else if (v < lo) then (hi - (lo - v)) else (lo + (v - hi))
 
--- fit a value into a range by saturation
-pin : Float -> Float -> Float -> Float
-pin lo hi v = if (v < lo) then (lo) else if (v > hi) then hi else v
-
 -- update ship for next frame
 shipFrame : Ship -> Ship
 shipFrame s =
-    let newVel = limit 4 {x=s.vel.x + (s.thrust * sin(2*pi*s.angle)), y=s.vel.y + (s.thrust * (0 - (cos (2*pi*s.angle))))}
+    let newVel = limit 4 {x=s.vel.x + (s.thrust * sin(turns s.angle)), y=s.vel.y + (s.thrust * -(cos (turns s.angle)))}
         newPos = {x=s.pos.x + newVel.x, y=s.pos.y + newVel.y}
     in  {s | pos <- newPos, vel <- newVel}
 
@@ -57,11 +53,24 @@ sceneFrame sc = {sc | ship <- shipFrame sc.ship }   {- also do collision etc... 
 
 -- Apply control input to the ship
 shipInput : Vec -> Ship -> Ship
-shipInput accel s = {s | angle <- wrap 0 1 (s.angle - (accel.x/60)),  thrust <- pin 0.0 0.1 accel.y}
+shipInput accel s = {s | angle <- wrap 0 1 (s.angle - (accel.x/60)),  thrust <- clamp 0.0 0.1 accel.y}
+
+ageParticles : [Particle] -> [Particle]
+ageParticles ps =
+    (map (\p -> {p | pos <- {x=p.pos.x+p.vel.x, y=p.pos.y+p.vel.y}, timeToLive <- p.timeToLive - 1}) ps)
+    |> filter (\p -> p.timeToLive > 0)
+
+-- add bullets to the list if guns firing, expire dead bullets
+openFire : Ship -> Bool -> [Particle] -> [Particle]
+openFire ship guns bullets =
+    let stillAlive = ageParticles bullets 
+        newVel     = {x=sin(turns ship.angle)*5, y=0-cos(turns ship.angle)*5}
+        newBullet  = {pos=ship.pos, vel=newVel, timeToLive=120}
+    in  if (guns && length stillAlive < 6) then (newBullet :: stillAlive) else (stillAlive)
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
-handleInput (accel, guns) s = sceneFrame {s | ship <- shipInput accel s.ship} 
+handleInput (accel, guns) s = sceneFrame {s | ship <- shipInput accel s.ship, bullets <- openFire s.ship guns s.bullets} 
 
 -- state machine taking frame inputs, giving current ship status
 -- The state automaton seems to duplicate the initial state with the run function
@@ -83,11 +92,15 @@ runningScene = (A.run (sceneState) defaultScene controlInput)
 --main : Signal a
 main = drawScene <~ Window.dimensions ~ runningScene
 
+-- draw a space ship, cruising through the aether...
+drawShip : Ship -> Form
+drawShip s = ngon 3 20 |> filled (rgb 0 85 176) |> move (s.pos.x, s.pos.y) |> rotate (turns s.angle + (pi*1.5))
+
+-- bullets, because (m/2)v^2 is potent.
+drawBullet : Particle -> Form
+drawBullet b = circle 2 |> filled (rgb 100 100 0) |> move (b.pos.x, b.pos.y)
+
+-- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
-drawScene (w,h) scene = collage w h
-       [ ngon 3 20
-          |> filled (rgb 0 85 170)
-          |> move (scene.ship.pos.x, scene.ship.pos.y)
-          |> rotate (2 * pi * scene.ship.angle + (pi*1.5))
-       ]
+drawScene (w,h) scene = collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets)) |> color (rgb 0 0 0)
 
