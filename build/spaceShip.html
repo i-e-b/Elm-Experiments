@@ -38,12 +38,6 @@ Elm.Main = function(elm){
       },
       x:Basics.toFloat(r.x),
       y:Basics.toFloat(r.y)};};
-  var scene = F2(function(arg2, ship){
-    return function(){
-      switch (arg2.ctor) {
-        case '_Tuple2':
-          return A3(Graphics.Collage.collage, arg2._0, arg2._1, _J.toList([Graphics.Collage.rotate(((2*Basics.pi)*ship.angle))(Graphics.Collage.move({ctor:"_Tuple2", _0:ship.pos.x, _1:ship.pos.y})(Graphics.Collage.filled(A3(Color.rgb, 0, 85, 170))(A2(Graphics.Collage.ngon, 3, 20))))]));
-      }_E.Case($moduleName,'between lines 60 and 65')}();});
   var pin = F3(function(lo, hi, v){
     return ((_N.cmp(v,lo)<0) ? lo : (Basics.otherwise ? ((_N.cmp(v,hi)>0) ? hi : (Basics.otherwise ? v : _E.If($moduleName,'on line 36, column 42 to 68'))) : _E.If($moduleName,'on line 36, column 15 to 68')));});
   var mag = function(v){
@@ -68,7 +62,7 @@ Elm.Main = function(elm){
         y:(v.y/m)} : _E.If($moduleName,'on line 25, column 9 to 53')));}();});
   var shipFrame = function(s){
     return function(){
-      var newVel = A2(limit, 2, {
+      var newVel = A2(limit, 4, {
         _:{
         },
         x:(s.vel.x+(s.thrust*Basics.sin(((2*Basics.pi)*s.angle)))),
@@ -80,7 +74,15 @@ Elm.Main = function(elm){
         y:(s.pos.y+newVel.y)};
       return _N.replace([['pos',newPos],['vel',newVel]], s);}();};
   var shipInput = F2(function(accel, s){
-    return shipFrame(_N.replace([['angle',A3(wrap, 0, 1, (s.angle+(accel.x/100)))],['thrust',A3(pin, (0-0.5), 1.0, accel.y)]], s));});
+    return shipFrame(_N.replace([['angle',A3(wrap, 0, 1, (s.angle-(accel.x/60)))],['thrust',A3(pin, 0.0, 0.1, accel.y)]], s));});
+  var ship = function(s){
+    return A2(Automaton.state, s, shipInput);};
+  var drawScene = F2(function(arg2, ship){
+    return function(){
+      switch (arg2.ctor) {
+        case '_Tuple2':
+          return A3(Graphics.Collage.collage, arg2._0, arg2._1, _J.toList([Graphics.Collage.rotate((((2*Basics.pi)*ship.angle)+(Basics.pi*1.5)))(Graphics.Collage.move({ctor:"_Tuple2", _0:ship.pos.x, _1:ship.pos.y})(Graphics.Collage.filled(A3(Color.rgb, 0, 85, 170))(A2(Graphics.Collage.ngon, 3, 20))))]));
+      }_E.Case($moduleName,'between lines 65 and 70')}();});
   var defaultShip = {
     _:{
     },
@@ -96,8 +98,8 @@ Elm.Main = function(elm){
     },
     x:0,
     y:0}};
-  var ship = A2(Automaton.state, defaultShip, shipInput);
-  var main = A3(Signal.lift2, scene, Window.dimensions, A3(Automaton.run, ship, defaultShip, periodArrowKeyVec));
+  var flyingShip = A3(Automaton.run, ship(defaultShip), defaultShip, periodArrowKeyVec);
+  var main = A2(Signal._op['~'], A2(Signal._op['<~'], drawScene, Window.dimensions), flyingShip);
   var Vec = F2(function(a, b){
     return {
       _:{
@@ -125,8 +127,9 @@ Elm.Main = function(elm){
     shipInput : shipInput, 
     ship : ship, 
     periodArrowKeyVec : periodArrowKeyVec, 
+    flyingShip : flyingShip, 
     main : main, 
-    scene : scene};};
+    drawScene : drawScene};};
         </script>
     </head>
     <body>

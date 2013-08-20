@@ -38,28 +38,33 @@ pin lo hi v = if (v < lo) then (lo) else if (v > hi) then hi else v
 -- update ship based for next frame
 shipFrame : Ship -> Ship
 shipFrame s =
-    let newVel = limit 2 {x=s.vel.x + (s.thrust * sin(2*pi*s.angle)), y=s.vel.y + (s.thrust * (0 - (cos (2*pi*s.angle))))}
+    let newVel = limit 4 {x=s.vel.x + (s.thrust * sin(2*pi*s.angle)), y=s.vel.y + (s.thrust * (0 - (cos (2*pi*s.angle))))}
         newPos = {x=s.pos.x + newVel.x, y=s.pos.y + newVel.y}
     in  {s | pos <- newPos, vel <- newVel}
 
 -- Apply input to the ship
 shipInput : Vec -> Ship -> Ship
-shipInput accel s = shipFrame {s | angle <- wrap 0 1 (s.angle + (accel.x/100)),  thrust <- pin -0.5 1.0 accel.y} 
+shipInput accel s = shipFrame {s | angle <- wrap 0 1 (s.angle - (accel.x/60)),  thrust <- pin 0.0 0.1 accel.y} 
 
 -- state machine taking frame inputs, giving current ship status
 -- The state automaton seems to duplicate the initial state with the run function
-ship : A.Automaton Vec Ship
-ship = A.state defaultShip shipInput
+ship : Ship -> A.Automaton Vec Ship
+ship s = A.state s shipInput
 
+-- arrow keys as a Vec, normalised to magnitude 1
 periodArrowKeyVec : Signal Vec
 periodArrowKeyVec = (normalise . toVec) <~ (sampleOn (fps 20) Keyboard.arrows)
 
-main = lift2 scene Window.dimensions (A.run ship defaultShip periodArrowKeyVec)
+flyingShip : Signal Ship
+flyingShip = (A.run (ship defaultShip) defaultShip periodArrowKeyVec) 
 
---scene : (Int,Int) -> Ship -> Signal
-scene (w,h) ship = collage w h
+-- A.run syntax seems weird...
+main = drawScene <~ Window.dimensions ~ flyingShip
+
+--drawScene : (Int,Int) -> Ship -> [Vec] -> Element
+drawScene (w,h) ship = collage w h
        [ ngon 3 20
           |> filled (rgb 0 85 170)
           |> move (ship.pos.x, ship.pos.y)
-          |> rotate (2 * pi * ship.angle)
+          |> rotate (2 * pi * ship.angle + (pi*1.5))
        ]
