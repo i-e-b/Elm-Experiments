@@ -6,14 +6,14 @@ import Window
 
 type Vec = {x:Float, y:Float}                               {- simple 2D vector -}
 type Particle = {pos:Vec, vel:Vec, timeToLive:Int}          {- a limited-life particle -}
-type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float}   {- our protagonist. Angle is [0..1] as tau radians -}
+type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float, fired:Bool}   {- our protagonist. Angle is [0..1] as tau radians -}
 type Roid = {pos:Vec, vel:Vec, size:Int}                    {- an asteroid. Size starts at 3, reduced on split. -}
 
 type Scene = {ship:Ship, roids:[Roid], bullets:[Particle]}  {- a level, the scene to render -}
 
 type Controls = (Vec, Bool)   {- ship thrust and steer, fire button pressed -}
 
-defaultShip = {pos={x=0,y=0},vel={x=0,y=0}, angle=0, thrust=0}
+defaultShip = {pos={x=0,y=0},vel={x=0,y=0}, angle=0, thrust=0, fired=False}
 defaultScene = {ship=defaultShip, roids=[], bullets=[]}     {- should include a randomly positioned set of 'roids -}
 
 -- Magnitude of a vector
@@ -52,9 +52,13 @@ sceneFrame : Scene -> Scene
 sceneFrame sc = {sc | ship <- shipFrame sc.ship }   {- also do collision etc... -}
 
 -- Apply control input to the ship
-shipInput : Vec -> Ship -> Ship
-shipInput accel s = {s | angle <- wrap 0 1 (s.angle - (accel.x/60)),  thrust <- clamp 0.0 0.1 accel.y}
+shipInput : Vec -> Bool -> Ship -> Ship
+shipInput accel gunFired s = {s |
+    angle <- wrap 0 1 (s.angle - (accel.x/60)),
+    fired <- gunFired,
+    thrust <- clamp 0.0 0.1 accel.y}
 
+-- move particles and reduce their lifespan
 ageParticles : [Particle] -> [Particle]
 ageParticles ps =
     (map (\p -> {p | pos <- {x=p.pos.x+p.vel.x, y=p.pos.y+p.vel.y}, timeToLive <- p.timeToLive - 1}) ps)
@@ -64,18 +68,17 @@ ageParticles ps =
 openFire : Ship -> Bool -> [Particle] -> [Particle]
 openFire ship guns bullets =
     let stillAlive = ageParticles bullets 
-        newVel     = {x=sin(turns ship.angle)*5, y=0-cos(turns ship.angle)*5}
+        newVel     = {x=ship.vel.x + sin(turns ship.angle)*5, y=ship.vel.y - cos(turns ship.angle)*5}
         newBullet  = {pos=ship.pos, vel=newVel, timeToLive=120}
-    in  if (guns && length stillAlive < 6) then (newBullet :: stillAlive) else (stillAlive)
+    in  if (guns && length stillAlive < 16) then (newBullet :: stillAlive) else (stillAlive)
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
-handleInput (accel, guns) s = sceneFrame {s | ship <- shipInput accel s.ship, bullets <- openFire s.ship guns s.bullets} 
-
--- state machine taking frame inputs, giving current ship status
--- The state automaton seems to duplicate the initial state with the run function
-sceneState : A.Automaton Controls Scene
-sceneState = A.state defaultScene handleInput
+handleInput (accel, guns) s =
+    let gunCanFire = guns && (not s.ship.fired)
+    in  sceneFrame {s |
+        ship <- shipInput accel guns s.ship,
+        bullets <- openFire s.ship gunCanFire s.bullets} 
 
 -- arrow keys as a Vec, normalised to magnitude 1
 arrowsVector : Signal Vec
@@ -83,11 +86,11 @@ arrowsVector = (normalise . toVec) <~ Keyboard.arrows
 
 -- game input: arrows for thrust, space to shoot
 controlInput : Signal Controls
-controlInput = sampleOn (fps 20) ( (,) <~ arrowsVector ~ Keyboard.space ) {- change needed -- should be risingEdge of kbd.space -}
+controlInput = sampleOn (fps 20) ((,) <~ arrowsVector ~ Keyboard.space)
 
 -- A.run syntax seems weird...
 runningScene : Signal Scene
-runningScene = (A.run (sceneState) defaultScene controlInput) 
+runningScene = foldp (handleInput) defaultScene controlInput 
 
 --main : Signal a
 main = drawScene <~ Window.dimensions ~ runningScene
