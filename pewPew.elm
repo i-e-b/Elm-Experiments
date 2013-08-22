@@ -96,6 +96,7 @@ runningScene = foldp (handleInput) defaultScene controlInput
 main = drawScene <~ Window.dimensions ~ runningScene
 
 -- draw a space ship, cruising through the aether...
+-- todo: draw this nicer
 drawShip : Ship -> Form
 drawShip s = ngon 3 20 |> filled (rgb 0 85 176) |> move (s.pos.x, s.pos.y) |> rotate (turns s.angle + (pi*1.5))
 
@@ -105,5 +106,7 @@ drawBullet b = circle 2 |> filled (rgb 100 100 0) |> move (b.pos.x, b.pos.y)
 
 -- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
-drawScene (w,h) scene = collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets)) |> color (rgb 0 0 0)
+drawScene (w,h) scene = 
+    collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets))
+    |> color (rgb 0 0 0)
 
