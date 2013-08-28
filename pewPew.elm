@@ -1,9 +1,9 @@
 -- a very dumb game of asteroids
 
 import Keyboard
-import Automaton as A
 import Window
 import open Vectors
+import List
 
 type Particle = {pos:Vec, vel:Vec, timeToLive:Int}          {- a limited-life particle -}
 type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float, fired:Bool}   {- our protagonist. Angle is [0..1] as tau radians -}
@@ -57,17 +57,27 @@ openFire ship guns bullets =
         newBullet  = {pos=ship.pos, vel=newVel, timeToLive=120}
     in  if (guns && length stillAlive < 16) then (newBullet :: stillAlive) else (stillAlive)
 
+-- very rough!!!
+noCollision : [Roid] -> Particle -> Bool
+noCollision listM singleT =
+    let dx2 a b = (a.pos.x - b.pos.x) * (a.pos.x - b.pos.x)
+        dy2 a b = (a.pos.y - b.pos.y) * (a.pos.y - b.pos.y)
+        dist a b = sqrt(dx2 a b + dy2 a b)
+    in  all (\x -> x > 10) ( map (\li -> dist li singleT) (listM) )
+
+-- very inefficient collision detection!
+collideFrame : Scene -> Scene
+collideFrame f =
+    let newBullets = List.filter (noCollision (f.roids)) f.bullets
+    in  {f | bullets <- newBullets } 
+
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
 handleInput (accel, guns) s =
     let gunCanFire = guns && (not s.ship.fired)
-    in  sceneFrame {s |
+    in  (collideFrame . sceneFrame) {s |
         ship <- shipInput accel guns s.ship,
         bullets <- openFire s.ship gunCanFire s.bullets} 
-
--- arrow keys as a Vec, normalised to magnitude 1
-arrowsVector : Signal Vec
-arrowsVector = (normalise . toVec) <~ Keyboard.arrows
 
 -- game input: arrows for thrust, space to shoot
 controlInput : Signal Controls
@@ -77,7 +87,7 @@ controlInput = sampleOn (fps 20) ((,) <~ arrowsVector ~ Keyboard.space)
 runningScene : Signal Scene
 runningScene = foldp (handleInput) defaultScene controlInput 
 
---main : Signal a
+main : Signal Element
 main = drawScene <~ Window.dimensions ~ runningScene
 
 -- draw a space ship, cruising through the aether...

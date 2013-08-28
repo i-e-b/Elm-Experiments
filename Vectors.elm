@@ -1,8 +1,14 @@
 -- 2D vector stuff for elm
 
-module Vectors (Vec, mag, normalise, limit, toVec) where
+module Vectors (Vec, mag, normalise, limit, toVec, arrowsVector) where
+
+import Keyboard
 
 type Vec = {x:Float, y:Float}                               {- simple 2D vector -}
+
+-- arrow keys as a Vec, normalised to magnitude 1
+arrowsVector : Signal Vec
+arrowsVector = (normalise . toVec) <~ Keyboard.arrows
 
 -- Magnitude of a vector
 mag : Vec -> Float
