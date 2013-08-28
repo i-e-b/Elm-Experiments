@@ -3,8 +3,8 @@
 import Keyboard
 import Automaton as A
 import Window
+import open Vectors
 
-type Vec = {x:Float, y:Float}                               {- simple 2D vector -}
 type Particle = {pos:Vec, vel:Vec, timeToLive:Int}          {- a limited-life particle -}
 type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float, fired:Bool}   {- our protagonist. Angle is [0..1] as tau radians -}
 type Roid = {pos:Vec, vel:Vec, size:Int}                    {- an asteroid. Size starts at 3, reduced on split. -}
@@ -14,27 +14,8 @@ type Scene = {ship:Ship, roids:[Roid], bullets:[Particle]}  {- a level, the scen
 type Controls = (Vec, Bool)   {- ship thrust and steer, fire button pressed -}
 
 defaultShip = {pos={x=0,y=0},vel={x=0,y=0}, angle=0, thrust=0, fired=False}
-defaultScene = {ship=defaultShip, roids=[], bullets=[]}     {- should include a randomly positioned set of 'roids -}
-
--- Magnitude of a vector
-mag : Vec -> Float
-mag v = sqrt (v.x * v.x + v.y * v.y)
-
--- Normalise a vector to magnitude = 1.0
-normalise : Vec -> Vec
-normalise v = 
-    let m = mag v
-    in  if (m == 0.0) then v else {x = v.x / m, y = v.y / m}
-
--- Limit a vector to a given magnitude
-limit : Float -> Vec -> Vec
-limit n v =
-    let m = (mag v) / n
-    in  if (m <= 1.0) then v else {x=v.x/m, y=v.y/m}
-
--- x,y ints to a Vec
-toVec : {x:Int, y:Int} -> Vec
-toVec r = {x=toFloat r.x, y=toFloat r.y}
+randomRoid = {pos={x=100,y=100}, vel={x= -0.2, y= -0.2}, size=3} {- not really very random yet! -}
+defaultScene = {ship=defaultShip, roids=[randomRoid], bullets=[]}     {- should include a randomly positioned set of 'roids -}
 
 -- fit a value into a range by wrapping
 wrap : Float -> Float -> Float -> Float
@@ -49,7 +30,11 @@ shipFrame s =
 
 -- update the scene for the next frame
 sceneFrame : Scene -> Scene
-sceneFrame sc = {sc | ship <- shipFrame sc.ship }   {- also do collision etc... -}
+sceneFrame sc = {sc | ship <- shipFrame sc.ship, roids <- map (roidFrame) sc.roids }   {- also do collision etc... -}
+
+-- update a single roid for the frame
+roidFrame : Roid -> Roid
+roidFrame r = {r | pos <- {x= r.pos.x + r.vel.x, y= r.pos.y + r.vel.y} }
 
 -- Apply control input to the ship
 shipInput : Vec -> Bool -> Ship -> Ship
@@ -104,9 +89,12 @@ drawShip s = ngon 3 20 |> filled (rgb 0 85 176) |> move (s.pos.x, s.pos.y) |> ro
 drawBullet : Particle -> Form
 drawBullet b = circle 2 |> filled (rgb 100 100 0) |> move (b.pos.x, b.pos.y)
 
+drawRoid : Roid -> Form
+drawRoid r = circle (toFloat (r.size * 9)) |> filled (rgb 50 50 50) |> move (r.pos.x, r.pos.y)
+
 -- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
 drawScene (w,h) scene = 
-    collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets))
+    collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids))
     |> color (rgb 0 0 0)
 
