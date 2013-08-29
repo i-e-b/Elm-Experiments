@@ -10,6 +10,8 @@ type Scene =
     { ship:Ship
     , roids:[Roid]
     , bullets:[Particle]
+    , level:Int
+    , lives:Int
     }
 
 type Positional a = {a | pos:Vec }      {- anything that can be positioned -}
@@ -22,8 +24,26 @@ type ScreenSize = (Int, Int) {- x,y of window dimensions -}
 type Controls = (Vec, Bool, ScreenSize)   {- ship thrust and steer, fire button pressed -}
 
 defaultShip = {pos={x=0,y=0},vel={x=0,y=0}, angle=0, thrust=0, fired=False}
-randomRoid = {pos={x=100,y=100}, vel={x= -0.2, y= -0.2}, size=3} {- not really very random yet! -}
-defaultScene = {ship=defaultShip, roids=[randomRoid], bullets=[]}     {- should include a randomly positioned set of 'roids -}
+
+-- asteriod number 'n' of a total count 'c'
+generateRoid : Int -> Int -> Roid
+generateRoid c n = 
+    let fn = toFloat n
+        fc = toFloat c
+        sinp = sin (turns (fn / fc))
+        cosp = cos (turns (fn / fc))
+    in  {pos={x=sinp * 100, y=cosp * 100}, vel={x= cosp * fc * 0.5, y= sinp * fc * 0.5}, size=3} {- not really very random yet! -}
+
+defaultScene = sceneForLevelAndLives 1 3
+
+-- Create a starting scene for the level
+-- to level up, call this with the current level + 1
+-- to reset after death, call with current lives - 1
+sceneForLevelAndLives : Int -> Int -> Scene
+sceneForLevelAndLives level lives = 
+    let roidCount = level + 1
+        newRoids = map (generateRoid roidCount) [1..roidCount]
+    in  {ship=defaultShip, roids=newRoids, bullets=[], level=level, lives=lives}
 
 -- fit a value into a range by wrapping
 wrap : Float -> Float -> Float -> Float
@@ -108,10 +128,15 @@ collideFrame f =
     let newBullets = List.filter (bulletCollision (f.roids)) f.bullets
         newRoids   = concatMap (roidCollision f.bullets) f.roids {- note that we impact on the old frame's bullets -}
         shipCrash  = shipCollision f.ship f.roids
+        completed  = length f.roids == 0
 
-        continueScene = {f | bullets <- newBullets, roids <- newRoids } 
-        failureScene  = defaultScene
-    in  if (shipCrash) then (failureScene) else (continueScene)
+        continueScene  = {f | bullets <- newBullets, roids <- newRoids } 
+        failureScene   = sceneForLevelAndLives f.level (f.lives - 1)
+        completedScene = sceneForLevelAndLives (f.level + 1) f.lives
+    in  if 
+        | completed -> completedScene
+        | shipCrash -> failureScene
+        | otherwise -> continueScene
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
@@ -148,7 +173,7 @@ drawRoid r = circle (toFloat (r.size * 9)) |> filled (rgb 50 50 50) |> move (r.p
 -- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
 --drawScene (w,h) scene = asText {screenx = w, screeny = h, s = scene }  {- <-- diagnostics mode! -}
-drawScene (w,h) scene = 
-    collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids))
-    |> color (rgb 0 0 0)
+drawScene (w,h) scene = if
+    | scene.lives > 0 -> collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids)) |> color (rgb 0 0 0)
+    | otherwise -> asText "Game Over"
 
