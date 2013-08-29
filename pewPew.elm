@@ -174,6 +174,6 @@ drawRoid r = circle (toFloat (r.size * 9)) |> filled (rgb 50 50 50) |> move (r.p
 drawScene : (Int,Int) -> Scene -> Element
 --drawScene (w,h) scene = asText {screenx = w, screeny = h, s = scene }  {- <-- diagnostics mode! -}
 drawScene (w,h) scene = if
-    | scene.lives > 0 -> collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids)) |> color (rgb 0 0 0)
-    | otherwise -> asText "Game Over"
+    | scene.lives <= 0 -> asText "Game Over"
+    | otherwise -> collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids)) |> color (rgb 0 0 0)
 
