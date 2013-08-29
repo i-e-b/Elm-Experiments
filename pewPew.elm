@@ -58,18 +58,28 @@ openFire ship guns bullets =
     in  if (guns && length stillAlive < 16) then (newBullet :: stillAlive) else (stillAlive)
 
 -- very rough!!!
-noCollision : [Roid] -> Particle -> Bool
-noCollision listM singleT =
+bulletCollision : [Roid] -> Particle -> Bool
+bulletCollision asteroids bullet =
     let dx2 a b = (a.pos.x - b.pos.x) * (a.pos.x - b.pos.x)
         dy2 a b = (a.pos.y - b.pos.y) * (a.pos.y - b.pos.y)
         dist a b = sqrt(dx2 a b + dy2 a b)
-    in  all (\x -> x > 10) ( map (\li -> dist li singleT) (listM) )
+    in  all (\x -> x <= 0) ( map (\roid -> (10.0 * toFloat roid.size) - (dist roid bullet) ) (asteroids) )
+
+-- given bullets and one asteroid,
+-- if any impacts and roid is size 1: output empty
+-- if any impacts and roid size > 1: output two smaller roids
+-- otherwise output same roid
+roidCollision : [Particle] -> Roid -> [Roid]
+roidCollision bullets roid = 
+    let isImpact = any (\x-> not x) (map (bulletCollision [roid]) bullets)
+    in  if (isImpact) then ([]) else ([roid])
 
 -- very inefficient collision detection!
 collideFrame : Scene -> Scene
 collideFrame f =
-    let newBullets = List.filter (noCollision (f.roids)) f.bullets
-    in  {f | bullets <- newBullets } 
+    let newBullets = List.filter (bulletCollision (f.roids)) f.bullets
+        newRoids   = concatMap (roidCollision f.bullets) f.roids {- note that we impact on the old frame's bullets -}
+    in  {f | bullets <- newBullets, roids <- newRoids } 
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
