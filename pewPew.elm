@@ -74,13 +74,21 @@ openFire ship guns bullets =
         newBullet  = {pos=ship.pos, vel=newVel, timeToLive=120}
     in  if (guns && length stillAlive < 16) then (newBullet :: stillAlive) else (stillAlive)
 
--- very rough!!!
-bulletCollision : [Roid] -> Particle -> Bool
-bulletCollision asteroids bullet =
+-- distance between centres of two objects
+dist : Positional a -> Positional b -> Float
+dist a b =
     let dx2 a b = (a.pos.x - b.pos.x) * (a.pos.x - b.pos.x)
         dy2 a b = (a.pos.y - b.pos.y) * (a.pos.y - b.pos.y)
-        dist a b = sqrt(dx2 a b + dy2 a b)
-    in  all (\x -> x <= 0) ( map (\roid -> (10.0 * toFloat roid.size) - (dist roid bullet) ) (asteroids) )
+    in  sqrt(dx2 a b + dy2 a b)
+
+-- check a list of asteroids against a single bullet
+-- True if NO impact (matches List.filter usage)
+bulletCollision : [Roid] -> Particle -> Bool
+bulletCollision asteroids bullet = all (\x -> x <= 0) ( map (\roid -> (10.0 * toFloat roid.size) - (dist roid bullet) ) (asteroids) )
+
+-- True if ship collides with any of the roids
+shipCollision : Ship -> [Roid] -> Bool
+shipCollision ship roids = any (\x -> x > 0) ( map (\roid -> ((10.0 * toFloat roid.size) + 15.0 {- approx ship size -}) - (dist roid ship) ) (roids) )
 
 -- given bullets and one asteroid,
 -- if any impacts and roid is size 1: output empty
@@ -99,7 +107,11 @@ collideFrame : Scene -> Scene
 collideFrame f =
     let newBullets = List.filter (bulletCollision (f.roids)) f.bullets
         newRoids   = concatMap (roidCollision f.bullets) f.roids {- note that we impact on the old frame's bullets -}
-    in  {f | bullets <- newBullets, roids <- newRoids } 
+        shipCrash  = shipCollision f.ship f.roids
+
+        continueScene = {f | bullets <- newBullets, roids <- newRoids } 
+        failureScene  = defaultScene
+    in  if (shipCrash) then (failureScene) else (continueScene)
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
@@ -135,7 +147,7 @@ drawRoid r = circle (toFloat (r.size * 9)) |> filled (rgb 50 50 50) |> move (r.p
 
 -- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
---drawScene (w,h) scene = asText {screenx = w, screeny = h, s = scene }
+--drawScene (w,h) scene = asText {screenx = w, screeny = h, s = scene }  {- <-- diagnostics mode! -}
 drawScene (w,h) scene = 
     collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids))
     |> color (rgb 0 0 0)
