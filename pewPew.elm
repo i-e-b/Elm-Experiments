@@ -89,9 +89,9 @@ bulletCollision asteroids bullet =
 roidCollision : [Particle] -> Roid -> [Roid]
 roidCollision bullets roid = 
     let isImpact = any (\x-> not x) (map (bulletCollision [roid]) bullets)
-        -- would be nice to do a median between the bullet and the parent 'roid. This will do for the moment.
-        leftSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.x * 4, y=roid.vel.y}}])
-        rightSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.x, y=roid.vel.y * 4}}])
+        {- note that the child roids' x and y are swapped from parent -}
+        leftSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.y * 2, y=roid.vel.x * (-2)}}])
+        rightSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.y * (-2), y=roid.vel.x * 2}}])
     in  if (isImpact) then (leftSmaller ++ rightSmaller) else ([roid])
 
 -- very inefficient collision detection!
@@ -107,7 +107,8 @@ handleInput (accel, guns, screensize) s =
     let gunCanFire = guns && (not s.ship.fired)
     in  (collideFrame . sceneFrame) {s |
         ship <- wrapPositional screensize (shipInput accel guns s.ship),
-        bullets <- openFire s.ship gunCanFire s.bullets} 
+        bullets <- openFire s.ship gunCanFire s.bullets,
+        roids <- map (wrapPositional screensize) s.roids} 
 
 -- game input: arrows for thrust, space to shoot
 controlInput : Signal Controls
