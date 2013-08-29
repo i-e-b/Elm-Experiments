@@ -5,13 +5,21 @@ import Window
 import open Vectors
 import List
 
+-- a level, the scene to render
+type Scene = 
+    { ship:Ship
+    , roids:[Roid]
+    , bullets:[Particle]
+    }
+
+type Positional a = {a | pos:Vec }      {- anything that can be positioned -}
+
 type Particle = {pos:Vec, vel:Vec, timeToLive:Int}          {- a limited-life particle -}
 type Ship = {pos:Vec, vel:Vec, angle:Float, thrust:Float, fired:Bool}   {- our protagonist. Angle is [0..1] as tau radians -}
 type Roid = {pos:Vec, vel:Vec, size:Int}                    {- an asteroid. Size starts at 3, reduced on split. -}
 
-type Scene = {ship:Ship, roids:[Roid], bullets:[Particle]}  {- a level, the scene to render -}
-
-type Controls = (Vec, Bool)   {- ship thrust and steer, fire button pressed -}
+type ScreenSize = (Int, Int) {- x,y of window dimensions -}
+type Controls = (Vec, Bool, ScreenSize)   {- ship thrust and steer, fire button pressed -}
 
 defaultShip = {pos={x=0,y=0},vel={x=0,y=0}, angle=0, thrust=0, fired=False}
 randomRoid = {pos={x=100,y=100}, vel={x= -0.2, y= -0.2}, size=3} {- not really very random yet! -}
@@ -20,6 +28,15 @@ defaultScene = {ship=defaultShip, roids=[randomRoid], bullets=[]}     {- should 
 -- fit a value into a range by wrapping
 wrap : Float -> Float -> Float -> Float
 wrap lo hi v = if (v >= lo && v <= hi) then (v) else if (v < lo) then (hi - (lo - v)) else (lo + (v - hi))
+
+-- fit a thing into a space
+wrapPositional : ScreenSize -> Positional a -> Positional a
+wrapPositional (sx,sy) thing =
+    let lx = 0 - (toFloat sx / 2)
+        ly = 0 - (toFloat sy / 2)
+        hx = (toFloat sx / 2)
+        hy = (toFloat sy / 2)
+    in {thing | pos <- {x=wrap lx hx thing.pos.x, y=wrap ly hy thing.pos.y}}
 
 -- update ship for next frame
 shipFrame : Ship -> Ship
@@ -86,15 +103,15 @@ collideFrame f =
 
 -- Apply input to the scene
 handleInput : Controls -> Scene -> Scene
-handleInput (accel, guns) s =
+handleInput (accel, guns, screensize) s =
     let gunCanFire = guns && (not s.ship.fired)
     in  (collideFrame . sceneFrame) {s |
-        ship <- shipInput accel guns s.ship,
+        ship <- wrapPositional screensize (shipInput accel guns s.ship),
         bullets <- openFire s.ship gunCanFire s.bullets} 
 
 -- game input: arrows for thrust, space to shoot
 controlInput : Signal Controls
-controlInput = sampleOn (fps 20) ((,) <~ arrowsVector ~ Keyboard.space)
+controlInput = sampleOn (fps 20) ((,,) <~ arrowsVector ~ Keyboard.space ~ Window.dimensions)
 
 -- A.run syntax seems weird...
 runningScene : Signal Scene
@@ -117,6 +134,7 @@ drawRoid r = circle (toFloat (r.size * 9)) |> filled (rgb 50 50 50) |> move (r.p
 
 -- collage all the freeform bits together into a renderable element
 drawScene : (Int,Int) -> Scene -> Element
+--drawScene (w,h) scene = asText {screenx = w, screeny = h, s = scene }
 drawScene (w,h) scene = 
     collage w h ([drawShip scene.ship] ++ (map (drawBullet) scene.bullets) ++ (map (drawRoid) scene.roids))
     |> color (rgb 0 0 0)
