@@ -72,7 +72,10 @@ bulletCollision asteroids bullet =
 roidCollision : [Particle] -> Roid -> [Roid]
 roidCollision bullets roid = 
     let isImpact = any (\x-> not x) (map (bulletCollision [roid]) bullets)
-    in  if (isImpact) then ([]) else ([roid])
+        -- would be nice to do a median between the bullet and the parent 'roid. This will do for the moment.
+        leftSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.x * 4, y=roid.vel.y}}])
+        rightSmaller = if (roid.size == 1) then ([]) else ([{roid | size <- roid.size - 1, vel <- {x=roid.vel.x, y=roid.vel.y * 4}}])
+    in  if (isImpact) then (leftSmaller ++ rightSmaller) else ([roid])
 
 -- very inefficient collision detection!
 collideFrame : Scene -> Scene
