@@ -1,5 +1,4 @@
 -- a very dumb game of asteroids
-
 import Keyboard
 import Window
 import open Vectors
