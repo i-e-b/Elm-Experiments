@@ -1,7 +1,10 @@
 Elm-Experiments
-===============
+---------------
 
-Playing with Elm
+DEFUNCT
+=======
+These experiments are for old versions of Elm.
+
 
 Nixos environment
 -----------------
